@@ -15,12 +15,16 @@ if __name__ == '__main__':
 
     collection.remove({'filename': logname})
 
+    packets = []
+
     for line in file:
         thisPacket = canlib.GMLANPacket.fromString(line.strip())
         packetDict = thisPacket.packetserialize()
         packetDict['filename'] = logname
 
-        insertid = collection.insert_one(packetDict).inserted_id
-        print insertid
+        packets.append(packetDict)
+
+    insertedids = collection.insert_many(packets).inserted_ids
+    print len(insertedids)
 
     file.close()
