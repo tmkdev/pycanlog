@@ -3,22 +3,26 @@ import serial
 import sys
 import logging
 import time
-
+import re
 
 def main(comport, filename, timestamp):
     ser = serial.Serial(port=comport, baudrate=250000, timeout=None)
     file = open(filename, 'wb')
+    re_line = re.compile('[TRtr]\d+[ 0-9]+')
 
     try:
         while True:
             line = ser.readline().strip()
-            tstamp = time.time()
-            print line
+            if re_line.match(line):
+                tstamp = time.time()
+                print line
 
-            if timestamp:
-                line += " {1}".format(timestamp)
+                if timestamp:
+                    line += " {1}".format(timestamp)
 
-            file.write("{{0}\n".format(line))
+                file.write("{{0}\n".format(line))
+            else:
+                logging.info("Invalid Line: {0}".format(line))
 
     except(KeyboardInterrupt, SystemExit):
         ser.close()
