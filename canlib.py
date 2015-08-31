@@ -50,6 +50,46 @@ class CanPacket(object):
             logging.error("Malformed SLCAN string: {0}".format(canstring))
             return cls(None, thisRtr, thisExt, CanPacket.BADPACKET, 0, [], canstring)
 
+    @classmethod
+    def fromCandump(cls, canstring):
+        # (1441054535.204928)  can0   C050040  [8] 00 A0 00 00 00 00 3C 00
+        # (1441054535.210110)  can0   C052040  [8] 00 00 9C 00 06 4D 43 46
+        # (1441054535.213229)  can0  1005C040  [2] 00 00
+        # (1441054535.216882)  can0  1005E040  [5] 00 00 30 00 03
+        # (1441054535.222535)  can0  10028040  [8] 1F 00 80 5F 8F 8C 29 03
+
+        thisData = []
+
+        thisExt = False
+        thisRtr = False
+
+        canregex = re.compile(' (\([0-9.]+\))  ([a-z]+[0-9])  ([ 0-9A-F]+)  \[([0-8])][ ]?([0-9A-F ]*)')
+
+        canmatch = canregex.match(canstring)
+
+        if canmatch:
+            try:
+                thisLen = canmatch.group(4)
+                datastring = canmatch.group(5).split()
+
+                thisData = [int(x, 16) for x in datastring]
+
+                thisCanId = canmatch.group(3)
+                if len(thisCanId) > 3:
+                    thisExt = True
+
+                thisCanId = int(thisCanId, 16)
+
+                return cls(thisCanId, thisRtr, thisExt, CanPacket.OK, thisLen, thisData, canstring)
+
+            except:
+                logging.error("Malformed CANDUMP string: {0}".format(canstring))
+                return cls(None, thisRtr, thisExt, CanPacket.BADPACKET, 0, [], canstring)
+
+        else:
+            logging.error("Malformed CANDUMP string. {0}".format(canstring))
+            return cls(None, 0, 0, CanPacket.BADPACKET, 0, [], canstring)
+
     def packetserialize(self):
         return {
             'canid': self.canid,
@@ -88,10 +128,9 @@ class GMLANPacket(CanPacket):
 
 if __name__ == '__main__':
 
-    pkt2 = GMLANPacket.fromString("T0000C04080765A78000000000")
+    pkt2 = GMLANPacket.fromCandump(" (1441054535.204928)  can0   C050040  [8] 00 A0 00 00 00 00 3C 00")
     print pkt2.data
     print pkt2.arbid
-    print pkt2.senderid
     print pkt2.packetserialize()
 
 
