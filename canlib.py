@@ -135,9 +135,9 @@ class GMLANPacket(CanPacket):
 if __name__ == '__main__':
 
     pkt2 = GMLANPacket.fromCandump(" (1441054535.204928)  can0   C050040  [8] 00 A0 00 00 00 00 3C 00")
-    print pkt2.data
-    print pkt2.arbid
-    print pkt2.timestamp
-    print pkt2.packetserialize()
+    print(pkt2.data)
+    print(pkt2.arbid)
+    print(pkt2.timestamp)
+    print(pkt2.packetserialize())
 
 
