@@ -5,7 +5,7 @@ import re
 import logging
 
 if __name__ == '__main__':
-    logname ='ctsv_20150823.log'
+    logname ='ctsv_candump_1.log'
     re_line = re.compile('[TRtr]\d+[ 0-9]*')
 
     mongohost = '192.168.1.41'
@@ -21,12 +21,12 @@ if __name__ == '__main__':
     packets = []
 
     for line in file:
-        if re_line.match(line):
-            thisPacket = canlib.GMLANPacket.fromString(line.strip())
-            packetDict = thisPacket.packetserialize()
-            packetDict['filename'] = logname
-            packetdb.insert(packetDict)
-        else:
-            logging.error("Invalid Line: {0}".format(line))
+        thisPacket = canlib.GMLANPacket.fromCandump(line.strip())
+        packetDict = thisPacket.packetserialize()
+        packetDict['filename'] = logname
+        logging.error("Inserting {0}".format(thisPacket.arbid))
+        packets.append(packetDict)
+
+    packetdb.insert_many(packets)
 
     file.close()

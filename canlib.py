@@ -6,7 +6,7 @@ import json
 class CanPacket(object):
     OK = 0
     BADPACKET = 1
-    def __init__(self, canid, rtr, ext, err, len, data, canstring=None):
+    def __init__(self, canid, rtr, ext, err, len, data, canstring=None, timestamp=None):
         self.canid = canid
         self.rtr = rtr
         self.ext = ext
@@ -14,6 +14,7 @@ class CanPacket(object):
         self.len = len
         self.data = data
         self.canstring = canstring
+        self.timestamp = timestamp
 
     @classmethod
     def fromString(cls, canstring):
@@ -26,6 +27,8 @@ class CanPacket(object):
 
         thisExt = False
         thisRtr = False
+
+        timestamp = None
 
         try:
             if canstring[0] in ['T', 'R']:
@@ -44,7 +47,7 @@ class CanPacket(object):
                 if thisLen > 0:
                     thisData = [int(x, 16) for x in re.findall('..', canstring[5:])]
 
-            return cls(thisCanId, thisRtr, thisExt, CanPacket.OK, thisLen, thisData, canstring)
+            return cls(thisCanId, thisRtr, thisExt, CanPacket.OK, thisLen, thisData, canstring, timestamp)
 
         except:
             logging.error("Malformed SLCAN string: {0}".format(canstring))
@@ -63,12 +66,14 @@ class CanPacket(object):
         thisExt = False
         thisRtr = False
 
-        canregex = re.compile(' (\([0-9.]+\))  ([a-z]+[0-9])  ([ 0-9A-F]+)  \[([0-8])][ ]?([0-9A-F ]*)')
+        canregex = re.compile('[ ]?\(([0-9.]+)\)  ([a-z]+[0-9])  ([ 0-9A-F]+)  \[([0-8])][ ]?([0-9A-F ]*)')
 
         canmatch = canregex.match(canstring)
 
         if canmatch:
             try:
+                timestamp = float(canmatch.group(1))
+
                 thisLen = canmatch.group(4)
                 datastring = canmatch.group(5).split()
 
@@ -80,7 +85,7 @@ class CanPacket(object):
 
                 thisCanId = int(thisCanId, 16)
 
-                return cls(thisCanId, thisRtr, thisExt, CanPacket.OK, thisLen, thisData, canstring)
+                return cls(thisCanId, thisRtr, thisExt, CanPacket.OK, thisLen, thisData, canstring, timestamp)
 
             except:
                 logging.error("Malformed CANDUMP string: {0}".format(canstring))
@@ -99,14 +104,15 @@ class CanPacket(object):
             'len': self.len,
             'data': self.data,
             'canstring': self.canstring,
+            'timestamp': self.timestamp,
         }
 
     def asciiData(self):
         return "".join([chr(x) for x in self.data])
 
 class GMLANPacket(CanPacket):
-    def __init__(self, canid, rtr, ext, err, len, data, canstring=None):
-        CanPacket.__init__(self, canid, rtr, ext, err, len, data, canstring)
+    def __init__(self, canid, rtr, ext, err, len, data, canstring=None, timestamp=None):
+        CanPacket.__init__(self, canid, rtr, ext, err, len, data, canstring, timestamp)
         if self.err == GMLANPacket.OK and self.ext:
             self.priority = self.canid >> 26
             self.arbid = ((self.canid) >> 13) & (2**13 -1)
@@ -131,6 +137,7 @@ if __name__ == '__main__':
     pkt2 = GMLANPacket.fromCandump(" (1441054535.204928)  can0   C050040  [8] 00 A0 00 00 00 00 3C 00")
     print pkt2.data
     print pkt2.arbid
+    print pkt2.timestamp
     print pkt2.packetserialize()
 
 
